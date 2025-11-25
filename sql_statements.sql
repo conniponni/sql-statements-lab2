@@ -40,39 +40,59 @@ WHERE person_id = 2;
 
 /*
 DEL 6
-Normalisering till 1NF av tabellen (StudentID, name, courses)
+Normalisering till 1NF av tabellen (StudentID, Name, PhoneNumbers)
 
-Kolumnen Courses innehåller flera kurser i samma fält, som bryter mot normalformen (1NF) där alla attribut ska vara atomära -> endast ett värde per cell.
+Problemet:
+Den ursprungliga tabellen har kolumnen PhoneNumbers som innehåller flera telefonnummer
+för samma student i ett enda fält, t.ex. "070-1234567, 073-5556677".
+Detta bryter mot Första normalformen (1NF), där varje attribut ska vara atomärt (endast ett värde per cell).
 
-Lösning -> dela upp informationen i två tabeller:
+Lösning – dela upp informationen i två tabeller:
 
 1) Student
-- StudentID (primärnyckel)
-- Name
+   - StudentID (primärnyckel)
+   - Name
 
-2) StudentCourse
-- StudentID (foreign key som refererar till Student.ID)
-- Course
+2) PhoneNumbers
+   - StudentID (foreign key som refererar till Student.StudentID)
+   - PhoneNumber (ett telefonnummer per rad)
 
-Genom att ha en seperat tabell för courses som innehåller studentid och courses uppfylles 1NF eftersom varje kolumn nu innehåller ett enda värde.
+Efter normaliseringen kommer varje telefonnummer att ligga i en separat rad i PhoneNumbers-tabellen.
+En student med två telefonnummer får två rader i PhoneNumbers kopplade via samma StudentID.
 
-1NF är viktigt så att:
-* data kan sökas korrekt med sql
-* index fungerar effektivt
-* joins och sql-operationer är effektiva
-* högre normalformer kan byggas korrekt
-* systemet är skalbart och lätt att underhålla
- */
+Detta uppfyller 1NF eftersom:
+* varje cell innehåller exakt ett värde
+* tabellen blir enklare att söka i med SQL
+* index och joins fungerar mer effektivt
+* högre normalformer kan användas (t.ex. 2NF och 3NF)
+* databasen blir mer skalbar och lättare att underhålla
+
+Exempel efter normalisering:
+Student:
+10 | Maja
+11 | Elias
+12 | Sara
+13 | Omar
+
+PhoneNumbers:
+10 | 070-1234567
+10 | 073-5556677
+11 | 070-8881122
+12 | 072-9911223
+12 | 072-9911224
+13 | 076-3344556
+*/
+
 CREATE TABLE Student
 (
     student_id INT PRIMARY KEY,
     name       VARCHAR(50) NOT NULL
 );
 
-CREATE TABLE StudentCourse
+CREATE TABLE PhoneNumbers
 (
-    student_id INT,
-    course     VARCHAR(50) NOT NULL,
+    student_id  INT,
+    phonenumber VARCHAR(20) NOT NULL,
     FOREIGN KEY (student_id) REFERENCES Student (student_id)
 );
 
@@ -88,40 +108,34 @@ VALUES (12, 'Sara');
 INSERT INTO Student (student_id, name)
 VALUES (13, 'Omar');
 
-INSERT INTO StudentCourse (student_id, course)
-VALUES (10, 'Math');
+INSERT INTO PhoneNumbers (student_id, phonenumber)
+VALUES (10, '070-1234567');
 
-INSERT INTO StudentCourse (student_id, course)
-VALUES (10, 'English');
+INSERT INTO PhoneNumbers (student_id, phonenumber)
+VALUES (10, '073-5556677');
 
-INSERT INTO StudentCourse (student_id, course)
-VALUES (10, 'Biology');
+INSERT INTO PhoneNumbers (student_id, phonenumber)
+VALUES (11, '070-8881122');
 
-INSERT INTO StudentCourse (student_id, course)
-VALUES (11, 'Math');
+INSERT INTO PhoneNumbers (student_id, phonenumber)
+VALUES (12, '072-9911223');
 
-INSERT INTO StudentCourse (student_id, course)
-VALUES (11, 'Chemistry');
+INSERT INTO PhoneNumbers (student_id, phonenumber)
+VALUES (12, '072-9911224');
 
-INSERT INTO StudentCourse (student_id, course)
-VALUES (12, 'Physics');
+INSERT INTO PhoneNumbers (student_id, phonenumber)
+VALUES (13, '076-3344556');
 
-INSERT INTO StudentCourse (student_id, course)
-VALUES (12, 'Math');
 
-INSERT INTO StudentCourse (student_id, course)
-VALUES (12, 'English');
-
-INSERT INTO StudentCourse (student_id, course)
-VALUES (13, 'Biology');
-
-SHOW TABLES;
 
 SELECT Student.student_id,
        Student.name,
-       StudentCourse.student_id,
-       course
+       PhoneNumbers.phonenumber
 FROM Student
-         LEFT JOIN StudentCourse
-                   ON Student.student_id = StudentCourse.student_id;
+         LEFT JOIN PhoneNumbers
+                   ON Student.student_id = PhoneNumbers.student_id;
 
+
+
+SELECT *
+FROM PhoneNumbers;
